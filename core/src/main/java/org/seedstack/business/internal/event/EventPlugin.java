@@ -32,6 +32,7 @@ import java.util.List;
 public class EventPlugin extends AbstractPlugin {
 
     public static final String PREFIX = "org.seedstack.business.event";
+    public static final String ASYNC = "async";
     private final Specification<Class<?>> eventHandlerSpecification = and(classImplements(EventHandler.class));
     private final Specification<Class<?>> eventSpecification = and(classImplements(Event.class));
 
@@ -39,6 +40,8 @@ public class EventPlugin extends AbstractPlugin {
 
     private List<Class<? extends EventHandler>> eventHandlerClasses = new ArrayList<Class<? extends EventHandler>>();
     private boolean watchRepo;
+
+    private String eventServiceQualifier;
 
     @Override
     public String name() {
@@ -57,6 +60,7 @@ public class EventPlugin extends AbstractPlugin {
                 .getConfiguration().subset(PREFIX);
 
         watchRepo = eventConfiguration.getBoolean("domain.watch", false);
+        eventServiceQualifier = eventConfiguration.getString("service.qualifier", ASYNC);
         Collection<Class<?>> scannedEventHandlerClasses = initContext.scannedTypesBySpecification().get(eventHandlerSpecification);
 
         for (Class<?> scannedEventHandlerClass : scannedEventHandlerClasses) {
@@ -77,7 +81,7 @@ public class EventPlugin extends AbstractPlugin {
 
     @Override
     public Object nativeUnitModule() {
-        return new EventModule(ImmutableListMultimap.copyOf(eventHandlersByEvent), ImmutableList.copyOf(eventHandlerClasses), watchRepo);
+        return new EventModule(ImmutableListMultimap.copyOf(eventHandlersByEvent), ImmutableList.copyOf(eventHandlerClasses), watchRepo, eventServiceQualifier);
     }
 
 }

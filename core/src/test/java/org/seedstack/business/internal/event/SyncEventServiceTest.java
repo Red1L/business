@@ -26,7 +26,7 @@ import org.mockito.runners.MockitoJUnitRunner;
  * @author pierre.thirouin@ext.mpsa.com
  */
 @RunWith(MockitoJUnitRunner.class)
-public class EventServiceInternalTest {
+public class SyncEventServiceTest {
 
     private EventService underTest;
     @Mock
@@ -42,7 +42,7 @@ public class EventServiceInternalTest {
         // provide an handler of MyEvent
         Mockito.when(injector.getInstance(MyEventHandler.class)).thenReturn(myEventHandler);
 
-        underTest = new EventServiceInternal(injector, multiMap);
+        underTest = new SyncEventService(injector, multiMap);
         underTest.fire(new MyEvent());
     }
 
@@ -50,7 +50,7 @@ public class EventServiceInternalTest {
     public void fire_event_not_received() {
         ArrayListMultimap<Class<? extends Event>, Class<? extends EventHandler>> multiMap = ArrayListMultimap.create();
         // no handler provided
-        underTest = new EventServiceInternal(injector, multiMap);
+        underTest = new SyncEventService(injector, multiMap);
         underTest.fire(new MyEvent());
     }
 }

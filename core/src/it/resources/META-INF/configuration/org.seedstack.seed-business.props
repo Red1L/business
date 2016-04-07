@@ -34,3 +34,4 @@ default-repository=org.seedstack.business.repositories.fixtures.MyQualifier
 
 [org.seedstack.business.event]
 domain.watch=true
+service.qualifier=sync

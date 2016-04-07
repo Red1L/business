@@ -24,6 +24,7 @@ package org.seedstack.business;
  * @see Event
  * @see EventHandler
  */
+@Service
 public interface EventService {
 
     /**

@@ -9,11 +9,13 @@ package org.seedstack.business.internal.event;
 
 import com.google.common.collect.Multimap;
 import com.google.inject.AbstractModule;
+import com.google.inject.Key;
 import com.google.inject.Scopes;
 import com.google.inject.TypeLiteral;
 import com.google.inject.matcher.AbstractMatcher;
 import com.google.inject.matcher.Matcher;
 import com.google.inject.matcher.Matchers;
+import com.google.inject.name.Names;
 import org.seedstack.business.Event;
 import org.seedstack.business.EventHandler;
 import org.seedstack.business.EventService;
@@ -32,6 +34,8 @@ import java.util.Arrays;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 /**
  * Event module. Bind EventHandlers, EventService and optionally add an interceptor on repositories.
@@ -45,6 +49,7 @@ class EventModule extends AbstractModule {
 
     private static final TypeLiteral<Multimap<Class<? extends Event>, Class<? extends EventHandler>>> EVENT_HANDLER_MAP_TYPE_LITERAL = new TypeLiteral<Multimap<Class<? extends Event>, Class<? extends EventHandler>>>() {
     };
+    public static final String ASYNC = "async";
 
     private final Multimap<Class<? extends Event>, Class<? extends EventHandler>> eventHandlersByEvent;
 
@@ -52,25 +57,42 @@ class EventModule extends AbstractModule {
 
     private final boolean watchRepo;
 
-    EventModule(Multimap<Class<? extends Event>, Class<? extends EventHandler>> eventHandlersByEvent, List<Class<? extends EventHandler>> eventHandlerClasses, boolean watchRepo) {
+    private String eventServiceQualifier;
+
+    EventModule(Multimap<Class<? extends Event>, Class<? extends EventHandler>> eventHandlersByEvent, List<Class<? extends EventHandler>> eventHandlerClasses, boolean watchRepo, String eventServiceQualifier) {
         this.eventHandlersByEvent = eventHandlersByEvent;
         this.eventHandlerClasses = eventHandlerClasses;
         this.watchRepo = watchRepo;
+        this.eventServiceQualifier = eventServiceQualifier;
     }
 
     @Override
     protected void configure() {
+        //TODO Temporary
+        bind(ExecutorService.class).toInstance(Executors.newFixedThreadPool(getDefaultPoolSize()));
         for (Class<? extends EventHandler> eventHandlerClass : eventHandlerClasses) {
             bind(eventHandlerClass);
             LOGGER.debug("binding {} in scope {}", eventHandlerClass, Scopes.NO_SCOPE);
         }
         bind(EVENT_HANDLER_MAP_TYPE_LITERAL).toInstance(eventHandlersByEvent);
-        bind(EventService.class).to(EventServiceInternal.class).in(Scopes.SINGLETON);
+        bind(EventService.class).to(Key.get(EventService.class, Names.named(eventServiceQualifier)));
         if (watchRepo) {
             RepositoryMethodInterceptor interceptor = new RepositoryMethodInterceptor();
             requestInjection(interceptor);
             bindInterceptor(Matchers.subclassesOf(Repository.class), handlerMethod(), interceptor);
         }
+    }
+
+    private String getEventServiceQualifier() {
+        if(eventServiceQualifier!=null && !eventServiceQualifier.isEmpty()){
+            return eventServiceQualifier;
+        }
+        return ASYNC;
+    }
+
+    private int getDefaultPoolSize() {
+        Double size = Runtime.getRuntime().availableProcessors()/2d;
+        return size.intValue();
     }
 
     Matcher<Method> handlerMethod() {

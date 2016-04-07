@@ -34,7 +34,7 @@ public class EventModuleTest {
         multimap.put(MyEvent2.class, MyEventHandlerFailed.class);
         List<Class<? extends EventHandler>> eventHandlerClasses = new ArrayList<Class<? extends EventHandler>>();
         eventHandlerClasses.add(MyEventHandlerFailed.class);
-        EventModule underTest = new EventModule(multimap, eventHandlerClasses, false);
+        EventModule underTest = new EventModule(multimap, eventHandlerClasses, false, "sync");
         Binder b = mock(Binder.class, Mockito.RETURNS_MOCKS);
         Reflection.field("binder").ofType(Binder.class).in(underTest).set(b);
         underTest.configure();
